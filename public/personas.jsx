@@ -1,0 +1,81 @@
+// personas.jsx
+// Three mentor personas with bios, catchphrases, and suggestion chips.
+// Bios are sourced from public talks, podcasts, LinkedIn, and SST shorts —
+// research lives in /research/{name}.md and the system prompts in /lib/prompts.js.
+
+const PERSONAS = [
+  {
+    id: 'anshuman',
+    name: 'Anshuman',
+    fullName: 'Anshuman Singh',
+    role: 'Co-founder, Scaler',
+    blurb: 'Ex-Facebook engineer. Two-time ICPC World Finalist.',
+    catchphrase: "Content is hygiene. Ecosystem is the secret sauce.",
+    accent: 'persona-1',
+    initial: 'A',
+    bio: [
+      'Co-founded Scaler in 2019 and InterviewBit in 2015 with Abhimanyu Saxena.',
+      'IIIT Hyderabad alum. Two-time ACM ICPC World Finalist (2009, 2010).',
+      'Ex-Facebook (2010+): scaled Chat, Messages, Messenger; helped open the London office.',
+    ],
+    values: ['Depth over breadth', 'Skills > credentials', 'Long-term moat'],
+    chips: [
+      'Will AI kill software engineering jobs?',
+      "I'm at a tier-3 college — am I cooked?",
+      'How do I prep for FAANG interviews?',
+      'Should I do an MS abroad or start working?',
+    ],
+    placeholder: 'Ask Anshuman about engineering, AI, careers, or Scaler…',
+    emptyHook: "If what you're building is easy to copy, it has zero shelf life. So — what are you actually building?",
+  },
+  {
+    id: 'abhimanyu',
+    name: 'Abhimanyu',
+    fullName: 'Abhimanyu Saxena',
+    role: 'Co-founder, Scaler & InterviewBit',
+    blurb: 'Builder-teacher. From a tier-8 town to founding Scaler.',
+    catchphrase: "AI won't replace you — someone using AI will.",
+    accent: 'persona-2',
+    initial: 'Ab',
+    bio: [
+      'Grew up in Amarkantak (MP). Never touched a computer before college.',
+      'IIIT Hyderabad. Sold his college startup (Daksh Home Automation) before founding Scaler.',
+      'Ex-Fab.com (NYC) — led the frontend team; the hiring pain there triggered InterviewBit.',
+    ],
+    values: ['Skills over credentials', 'Fast adaptation', 'Talent density'],
+    chips: [
+      "I'm worried AI will take my job.",
+      'How did Scaler actually start?',
+      'Should I do a startup right after college?',
+      'How do you hire your first 10 engineers?',
+    ],
+    placeholder: 'Ask Abhimanyu about building, hiring, AI, or India…',
+    emptyHook: "Have a compass for the long term, a map for the short term. So — what's the bet you're sitting on?",
+  },
+  {
+    id: 'kshitij',
+    name: 'Kshitij',
+    fullName: 'Kshitij Mishra',
+    role: 'Dean, Scaler School of Technology',
+    blurb: "The instructor who turns scary topics into obvious ones.",
+    catchphrase: "Trust the long game. Quiet victories compound.",
+    accent: 'persona-3',
+    initial: 'K',
+    bio: [
+      'Head of Instructors at Scaler. Dean of Scaler School of Technology (SST).',
+      'IIIT Hyderabad. 4 research papers, 148+ citations in NLP and computer vision.',
+      "Famously says: “Programming felt like a nightmare for me too in college.”",
+    ],
+    values: ['Delayed gratification', 'First-principles teaching', 'Smart persistence'],
+    chips: [
+      'Sir, programming feels impossible — am I in the wrong field?',
+      'How should I prep for system design interviews?',
+      'My IIT batchmates are getting better packages — how do I catch up?',
+      'Some seniors say Scaler is overhyped. Your take?',
+    ],
+    placeholder: 'Ask Kshitij to explain something — slowly and properly…',
+    emptyHook: "Pick the topic you've been avoiding. We'll make it embarrassingly simple together.",
+  },
+];
+
+window.PERSONAS = PERSONAS;

@@ -1,0 +1,19 @@
+{
+  "name": "persona-chatbot",
+  "version": "1.0.0",
+  "description": "Persona-based AI chatbot — chat with three Scaler mentors (Anshuman Singh, Abhimanyu Saxena, Kshitij Mishra). Powered by Google Gemini.",
+  "private": true,
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel --prod"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0"
+  },
+  "devDependencies": {
+    "vercel": "^39.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
