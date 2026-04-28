@@ -1,4 +1,4 @@
-/* Persona — bubbly playful, violet→aqua palette.
+/* ThinkLike — bubbly playful, violet→aqua palette.
    Top persona switcher · right-side bio panel. */
 
 :root {
@@ -102,10 +102,14 @@ button { font-family: inherit; cursor: pointer; }
 .brand { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
 .brand-mark {
   width: 32px; height: 32px; border-radius: 11px;
-  background: linear-gradient(135deg, #7400b8, #5390d9 50%, #56cfe1);
-  color: white; display: grid; place-items: center;
-  font-family: var(--font-mono); font-size: 14px; font-weight: 700;
-  box-shadow: 0 4px 14px rgba(116, 0, 184, 0.35);
+  overflow: hidden;
+  flex-shrink: 0;
+  box-shadow: 0 4px 14px rgba(116, 0, 184, 0.25);
+}
+.brand-mark img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
 }
 .brand-name { font-size: 17px; font-weight: 600; letter-spacing: -0.02em; }
 .brand-sub { font-family: var(--font-mono); font-size: 10.5px; color: var(--fg-soft); margin-top: 1px; }
@@ -277,6 +281,20 @@ button { font-family: inherit; cursor: pointer; }
 
 .cot-wrap { display: block; margin-bottom: 10px; }
 .bubble-text { display: block; }
+.streaming-caret {
+  display: inline-block;
+  width: 7px;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  background: linear-gradient(135deg, var(--p1), var(--p2));
+  border-radius: 2px;
+  animation: streaming-blink 1s steps(2, end) infinite;
+}
+@keyframes streaming-blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
 
 .bubble-meta {
   display: flex; align-items: center; gap: 10px;

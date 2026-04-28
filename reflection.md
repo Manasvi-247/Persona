@@ -16,10 +16,6 @@ The second GIGO lesson came from prompt scaffolding. My early draft of Anshuman'
 
 Three things, in order:
 
-1. **Streaming responses.** The current API returns the full reply at once, so the typing indicator runs for 2–3 seconds before the bubble appears. Streaming would feel dramatically more alive, especially for Abhimanyu's longer storytelling answers.
-
-2. **Persona-aware safety rails.** Right now constraints like "don't bash institutions" live inside the prompt and rely on the model to obey them. A second, tiny pass that scores responses against a constraint checklist would catch edge cases the main prompt misses.
-
-3. **Conversation memory tuning.** Right now the full chat history is passed every turn. For long conversations this could drift the persona toward generic AI-assistant behavior. A periodic re-injection of the persona's strongest signature phrases mid-conversation would keep the voice from fading.
+1. **Conversation memory tuning.** Right now the full chat history is passed every turn. For long conversations this could drift the persona toward generic AI-assistant behavior. A periodic re-injection of the persona's strongest signature phrases mid-conversation would keep the voice from fading.
 
 The deeper takeaway: prompts behave like product specifications. Vague specs ship vague products. The prompt-engineering work isn't a one-time setup task — it's the actual product.

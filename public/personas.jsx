@@ -1,7 +1,4 @@
-// personas.jsx
-// Three mentor personas with bios, catchphrases, and suggestion chips.
-// Bios are sourced from public talks, podcasts, LinkedIn, and SST shorts —
-// research lives in /research/{name}.md and the system prompts in /lib/prompts.js.
+// Persona metadata for the chat UI (system prompts live in /lib/prompts.js).
 
 const PERSONAS = [
   {

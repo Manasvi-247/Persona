@@ -1,4 +1,4 @@
-# System Prompts — Persona Chatbot
+# System Prompts — ThinkLike
 
 This file contains the three system prompts used to power the persona chatbot. Each prompt was crafted from primary research collected in `anshuman.md`, `kshitij.md`, and `abhimanyu.md` (LinkedIn posts, podcast transcripts, SST shorts, TEDx talks, and student-facing content).
 

@@ -1,7 +1,7 @@
 {
-  "name": "persona-chatbot",
+  "name": "thinklike",
   "version": "1.0.0",
-  "description": "Persona-based AI chatbot — chat with three Scaler mentors (Anshuman Singh, Abhimanyu Saxena, Kshitij Mishra). Powered by Google Gemini.",
+  "description": "ThinkLike — persona-based AI chatbot. Chat with three Scaler mentors (Anshuman Singh, Abhimanyu Saxena, Kshitij Mishra). Powered by Google Gemini.",
   "private": true,
   "scripts": {
     "start": "vercel dev",

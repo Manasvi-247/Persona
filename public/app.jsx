@@ -1,9 +1,5 @@
-// app.jsx — Persona chat: top tabs · right bio sidebar
-
 const { useState, useEffect, useRef, useMemo, useCallback } = React;
 
-// Calls the real backend at /api/chat. The endpoint loads the right system
-// prompt server-side and returns a string reply.
 async function fetchReply(personaId, history) {
   const messages = history
     .filter((m) => !m.isError) // never replay error bubbles to the model
@@ -17,19 +13,65 @@ async function fetchReply(personaId, history) {
       body: JSON.stringify({ persona: personaId, messages }),
     });
   } catch (e) {
-    const err = new Error('network');
+    const err = new Error(`Network failure: ${e?.message || 'connection lost'}`);
     err.kind = 'network';
     throw err;
   }
 
-  const data = await res.json().catch(() => ({}));
+  // Try to parse JSON. If it fails, the deployed API is probably on an older
+  // build that still streams SSE — surface that explicitly.
+  const rawText = await res.text().catch(() => '');
+  let data = {};
+  try { data = rawText ? JSON.parse(rawText) : {}; } catch {
+    if (rawText.startsWith('data:')) {
+      const err = new Error('The server is returning streaming SSE responses, but this page expects JSON. The deployed API is on an older build — redeploy to fix.');
+      err.kind = 'server';
+      throw err;
+    }
+    const err = new Error(`Server returned non-JSON response (status ${res.status}).`);
+    err.kind = 'server';
+    throw err;
+  }
+
   if (!res.ok) {
-    const err = new Error(data.error || `Request failed (${res.status}).`);
+    const err = new Error(data.error || `Request failed with status ${res.status}.`);
     err.status = res.status;
     err.kind = errorKindFromStatus(res.status, data.error || '');
     throw err;
   }
-  return data.reply || '';
+
+  if (!data.reply) {
+    const err = new Error(data.error || 'Server returned 200 but no reply field — likely a build mismatch between frontend and API.');
+    err.kind = 'server';
+    throw err;
+  }
+
+  return data.reply;
+}
+
+// Reveal `target` text into the bubble character-by-character. Returns a
+// promise that resolves when the animation finishes. The cancel function
+// stops the animation immediately if called (e.g. on persona switch).
+function typewriter(target, onUpdate) {
+  // Adaptive pacing: short replies type slowly, long replies sweep faster
+  // so the user isn't watching a 10-second crawl. ~150 chars/sec ceiling.
+  const total = target.length;
+  const charsPerTick = Math.max(2, Math.ceil(total / 200));
+  let cancelled = false;
+
+  const promise = new Promise((resolve) => {
+    let i = 0;
+    const tick = () => {
+      if (cancelled) { resolve(); return; }
+      i = Math.min(i + charsPerTick, total);
+      onUpdate(target.slice(0, i), i >= total);
+      if (i >= total) resolve();
+      else requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
+
+  return { promise, cancel: () => { cancelled = true; } };
 }
 
 function errorKindFromStatus(status, message) {
@@ -137,7 +179,10 @@ function Message({ msg, persona, onRetry }) {
           )}
         </div>
         <div className="bubble">
-          <div className="bubble-text">{msg.text}</div>
+          <div className="bubble-text">
+            {msg.text}
+            {msg.streaming && <span className="streaming-caret" aria-hidden="true" />}
+          </div>
         </div>
       </div>
     </div>
@@ -206,8 +251,7 @@ function BioPanel({ persona, onReset }) {
       </div>
 
       <div className="bio-foot">
-        Persona-based AI mentor.<br/>
-        Replies simulated for this UI demo.
+        ThinkLike — persona-based AI mentor.
       </div>
     </aside>
   );
@@ -284,15 +328,12 @@ function getInitialPersona() {
   return match ? match.id : PERSONAS[0].id;
 }
 
-// Read the cross-page theme set by either landing or chat. Defaults to light.
 function getInitialDark() {
   try {
     return localStorage.getItem('persona-theme') === 'dark';
   } catch { return false; }
 }
 
-// Conversation persistence — survives page reloads. Stored under one key
-// keyed by persona id. Date fields are revived to real Date objects.
 const CONVOS_STORAGE_KEY = 'persona-convos';
 
 function loadConvos() {
@@ -316,10 +357,15 @@ function loadConvos() {
 
 function saveConvos(convos) {
   try {
-    localStorage.setItem(CONVOS_STORAGE_KEY, JSON.stringify(convos));
+    // Strip transient flags (`streaming`, `id`) before persisting — those are
+    // only meaningful for the in-progress render, not for restored history.
+    const sanitized = {};
+    for (const [pid, msgs] of Object.entries(convos)) {
+      sanitized[pid] = (msgs || []).map(({ streaming, id, ...rest }) => rest);
+    }
+    localStorage.setItem(CONVOS_STORAGE_KEY, JSON.stringify(sanitized));
   } catch {
-    // Quota exceeded or storage disabled — silently drop, conversation still
-    // works in memory for the rest of the session.
+    // Quota exceeded or storage disabled — fall back to in-memory only.
   }
 }
 
@@ -329,14 +375,20 @@ function App() {
   const [activeId, setActiveId] = useState(getInitialPersona);
   const [convos, setConvos] = useState(loadConvos);
   const [typing, setTyping] = useState(false);
+  // Holds the bot reply currently being typewriter-animated. Lives outside
+  // `convos` so we don't write to localStorage on every animation frame.
+  const [streamingMsg, setStreamingMsg] = useState(null);
+  const cancelAnimRef = useRef(null);
 
-  // Persist conversations to localStorage whenever they change. Errors are
-  // already filtered before each save by callApi, so storage stays clean.
   useEffect(() => { saveConvos(convos); }, [convos]);
   const messagesRef = useRef(null);
 
   const persona = useMemo(() => PERSONAS.find((p) => p.id === activeId), [activeId]);
-  const messages = convos[activeId] || [];
+  const baseMessages = convos[activeId] || [];
+  const messages = streamingMsg && streamingMsg.personaId === activeId
+    ? [...baseMessages, { id: streamingMsg.msgId, from: 'bot', text: streamingMsg.text, streaming: true, time: streamingMsg.time }]
+    : baseMessages;
+  const busy = typing || !!streamingMsg;
 
   useEffect(() => {
     document.documentElement.dataset.theme = t.dark ? 'dark' : 'light';
@@ -348,30 +400,55 @@ function App() {
 
   useEffect(() => {
     if (messagesRef.current) messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
-  }, [messages.length, typing, activeId]);
+  }, [messages.length, typing, activeId, streamingMsg?.text]);
 
   const switchPersona = (id) => {
     if (id === activeId) return;
+    // Cancel any in-flight typewriter so the new persona starts clean.
+    cancelAnimRef.current?.();
+    cancelAnimRef.current = null;
+    setStreamingMsg(null);
     setActiveId(id);
     setTyping(false);
   };
 
   const reset = () => {
+    cancelAnimRef.current?.();
+    cancelAnimRef.current = null;
+    setStreamingMsg(null);
     setConvos((c) => ({ ...c, [activeId]: [] }));
     setTyping(false);
   };
 
-  // Internal: takes the history that should be sent (already includes the new user message).
   const callApi = useCallback(async (personaId, historyToSend) => {
     setTyping(true);
+    const msgId = `${Date.now()}-${Math.random()}`;
+    const startTime = new Date();
+
     try {
       const reply = await fetchReply(personaId, historyToSend);
-      const botMsg = {
-        from: 'bot',
-        text: (reply && reply.trim()) || "(The model returned an empty reply. Try rephrasing your question.)",
-        time: new Date(),
-      };
-      setConvos((c) => ({ ...c, [personaId]: [...(c[personaId] || []).filter((m) => !m.isError), botMsg] }));
+      const finalText = (reply && reply.trim()) || "(The model returned an empty reply. Try rephrasing your question.)";
+
+      // Hand off from typing dots to the typewriter animation.
+      setTyping(false);
+      setStreamingMsg({ personaId, msgId, text: '', time: startTime });
+
+      const anim = typewriter(finalText, (partial) => {
+        setStreamingMsg((prev) => (prev && prev.msgId === msgId ? { ...prev, text: partial } : prev));
+      });
+      cancelAnimRef.current = anim.cancel;
+      await anim.promise;
+      cancelAnimRef.current = null;
+
+      // Commit the finished message into the persistent conversation.
+      setConvos((c) => ({
+        ...c,
+        [personaId]: [
+          ...(c[personaId] || []).filter((m) => !m.isError),
+          { id: msgId, from: 'bot', text: finalText, time: startTime },
+        ],
+      }));
+      setStreamingMsg(null);
     } catch (err) {
       const errMsg = {
         from: 'bot',
@@ -380,7 +457,11 @@ function App() {
         detail: err.message,
         time: new Date(),
       };
-      setConvos((c) => ({ ...c, [personaId]: [...(c[personaId] || []).filter((m) => !m.isError), errMsg] }));
+      setConvos((c) => ({
+        ...c,
+        [personaId]: [...(c[personaId] || []).filter((m) => !m.isError), errMsg],
+      }));
+      setStreamingMsg(null);
     } finally {
       setTyping(false);
     }
@@ -402,12 +483,12 @@ function App() {
   }, [activeId, convos, callApi]);
 
   return (
-    <div className="app" data-screen-label="Persona chat">
+    <div className="app" data-screen-label="ThinkLike chat">
       <main className="chat">
         <header className="topbar">
           <div className="brand">
-            <div className="brand-mark">P</div>
-            <div className="brand-name">Persona</div>
+            <div className="brand-mark"><img src="/avatars/logo.png" alt="ThinkLike" /></div>
+            <div className="brand-name">ThinkLike</div>
           </div>
 
           <div className="tabs">
@@ -420,15 +501,15 @@ function App() {
         </header>
 
         <div className="messages" ref={messagesRef}>
-          {messages.length === 0 && !typing && <EmptyState persona={persona} />}
+          {messages.length === 0 && !busy && <EmptyState persona={persona} />}
           {messages.map((m, i) => (
-            <Message key={i} msg={m} persona={persona} onRetry={m.isError && !typing ? retry : null} />
+            <Message key={m.id || i} msg={m} persona={persona} onRetry={m.isError && !busy ? retry : null} />
           ))}
           {typing && <TypingIndicator persona={persona} />}
         </div>
 
         <div className="composer-wrap">
-          {t.showChips && messages.length === 0 && (
+          {t.showChips && messages.length === 0 && !busy && (
             <div className="chips">
               {persona.chips.map((c, i) => (
                 <button key={i} className="chip" data-accent={persona.accent} onClick={() => send(c)}>
@@ -437,7 +518,7 @@ function App() {
               ))}
             </div>
           )}
-          <Composer persona={persona} onSend={send} disabled={typing} />
+          <Composer persona={persona} onSend={send} disabled={busy} />
           <div className="composer-hint">
             press <kbd>↵</kbd> to send · <kbd>shift</kbd>+<kbd>↵</kbd> for new line
           </div>

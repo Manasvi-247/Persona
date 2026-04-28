@@ -4,7 +4,9 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="color-scheme" content="light dark" />
-<title>Persona — Chat with three Scaler mentors</title>
+<link rel="icon" type="image/png" href="/avatars/logo.png?v=1" />
+<link rel="apple-touch-icon" href="/avatars/logo.png?v=1" />
+<title>ThinkLike — Chat with three Scaler mentors</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
@@ -73,10 +75,14 @@
   .brand { display: flex; align-items: center; gap: 10px; }
   .brand-mark {
     width: 34px; height: 34px; border-radius: 11px;
-    background: linear-gradient(135deg, #7400b8, #5390d9 60%, #56cfe1);
-    color: white; display: grid; place-items: center;
-    font-family: var(--font-mono); font-size: 15px; font-weight: 700;
-    box-shadow: 0 4px 14px rgba(116, 0, 184, 0.35);
+    overflow: hidden;
+    box-shadow: 0 4px 14px rgba(116, 0, 184, 0.25);
+    flex-shrink: 0;
+  }
+  .brand-mark img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
   }
   .brand-name { font-size: 18px; font-weight: 600; letter-spacing: -0.02em; }
   .brand-sub { font-family: var(--font-mono); font-size: 11px; color: var(--fg-soft); }
@@ -323,7 +329,13 @@
     border-radius: 999px;
     margin-bottom: 18px;
     width: fit-content;
+    max-width: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
   }
+  .demo-tabs::-webkit-scrollbar { display: none; }
   .demo-tab {
     display: inline-flex; align-items: center; gap: 8px;
     padding: 6px 14px 6px 6px;
@@ -331,6 +343,8 @@
     font-size: 12.5px;
     color: var(--fg-muted);
     transition: all 0.18s;
+    flex-shrink: 0;
+    white-space: nowrap;
   }
   .demo-tab.active { color: white; background: linear-gradient(135deg, #7400b8, #6930c3); box-shadow: 0 4px 14px rgba(116,0,184,0.35); }
   .demo-tab .fb-avatar { width: 22px; height: 22px; font-size: 10px; }
@@ -675,6 +689,17 @@
     .scroll-hint { display: none; }
     .big-cta { padding: 50px 24px; border-radius: 28px; }
     .demo-card { transform: none; padding: 18px; }
+    .demo-tabs { gap: 4px; padding: 3px; }
+    .demo-tab {
+      padding: 5px 10px 5px 5px;
+      font-size: 11.5px;
+      gap: 6px;
+    }
+    .demo-tab .fb-avatar { width: 20px; height: 20px; }
+  }
+  @media (max-width: 380px) {
+    .demo-tab { padding: 5px 8px 5px 4px; font-size: 11px; }
+    .demo-tab .fb-avatar { width: 18px; height: 18px; }
   }
 </style>
 </head>
@@ -682,8 +707,8 @@
 
 <nav class="nav">
   <a href="#top" class="brand">
-    <div class="brand-mark">P</div>
-    <div class="brand-name">Persona</div>
+    <div class="brand-mark"><img src="/avatars/logo.png" alt="ThinkLike" /></div>
+    <div class="brand-name">ThinkLike</div>
   </a>
   <div class="nav-right">
     <a href="#mentors" class="nav-link">mentors</a>
@@ -707,11 +732,7 @@
     </h1>
 
     <p class="sub">
-      Persona is a prompt-engineered AI chat that lets you have real conversations with
-      <strong style="color: var(--p1); font-weight: 500;">Anshuman</strong>,
-      <strong style="color: var(--p2); font-weight: 500;">Abhimanyu</strong>, and
-      <strong style="color: var(--p3-deep); font-weight: 500;">Kshitij</strong> —
-      not a polite chatbot pretending to be them.
+      ThinkLike is an AI chat that lets you have real conversations with mentors.
     </p>
 
     <div class="cta-row">
@@ -821,7 +842,7 @@
     <div class="reveal">
       <div class="section-tag">how it works</div>
       <h2 class="section-title">No magic. Just <em>good prompts.</em></h2>
-      <p class="section-sub">Each mentor has a hand-crafted system prompt — researched, annotated, with few-shot examples and chain-of-thought instructions. The LLM isn't pretending; it's reasoning in their voice.</p>
+      <p class="section-sub">Each mentor has a hand-crafted system prompt — researched, annotated, with few-shot examples and chain-of-thought instructions. The LLM isn't pretending - it's reasoning in their voice.</p>
     </div>
 
     <div class="how-grid">
@@ -859,7 +880,6 @@
 </section>
 
 <footer class="footer">
-  Persona — built for the prompt-engineering assignment, Scaler Academy.
   <span class="dot-sep">·</span>
   Three real people, simulated thoughtfully.
 </footer>
