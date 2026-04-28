@@ -3,12 +3,14 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="color-scheme" content="light dark" />
 <title>Persona — Chat with three Scaler mentors</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
 <style>
   :root {
+    color-scheme: light dark;
     --font-sans: 'Geist', ui-sans-serif, system-ui, sans-serif;
     --font-mono: 'Geist Mono', ui-monospace, monospace;
     --font-serif: 'Instrument Serif', Georgia, serif;
@@ -23,8 +25,8 @@
     --border-strong: rgba(116, 0, 184, 0.22);
 
     --p1: #6930c3; --p1-deep: #7400b8; --p1-soft: rgba(105, 48, 195, 0.13);
-    --p2: #5390d9; --p2-deep: #4ea8de; --p2-soft: rgba(83, 144, 217, 0.15);
-    --p3: #56cfe1; --p3-deep: #48bfe3; --p3-soft: rgba(100, 223, 223, 0.18);
+    --p2: #5390d9; --p2-deep: #48bfe3; --p2-soft: rgba(83, 144, 217, 0.15);
+    --p3: #56cfe1; --p3-deep: #80ffdb; --p3-soft: rgba(100, 223, 223, 0.18);
 
     --shadow-card: 0 1px 0 rgba(255,255,255,0.7) inset, 0 6px 28px rgba(73, 40, 162, 0.08);
     --shadow-pop: 0 18px 50px rgba(73, 40, 162, 0.18);
@@ -48,20 +50,9 @@
   body {
     font-family: var(--font-sans);
     color: var(--fg);
-    background:
-      radial-gradient(ellipse 80% 60% at 0% 0%, rgba(116, 0, 184, 0.10), transparent 60%),
-      radial-gradient(ellipse 70% 50% at 100% 30%, rgba(83, 144, 217, 0.08), transparent 60%),
-      radial-gradient(ellipse 60% 40% at 50% 100%, rgba(100, 223, 223, 0.10), transparent 60%),
-      var(--bg);
+    background: var(--bg);
     -webkit-font-smoothing: antialiased;
     overflow-x: hidden;
-  }
-  [data-theme="dark"] body {
-    background:
-      radial-gradient(ellipse 80% 60% at 0% 0%, rgba(116, 0, 184, 0.22), transparent 60%),
-      radial-gradient(ellipse 70% 50% at 100% 30%, rgba(83, 144, 217, 0.15), transparent 60%),
-      radial-gradient(ellipse 60% 40% at 50% 100%, rgba(100, 223, 223, 0.12), transparent 60%),
-      var(--bg);
   }
 
   button { font-family: inherit; cursor: pointer; }
@@ -82,7 +73,7 @@
   .brand { display: flex; align-items: center; gap: 10px; }
   .brand-mark {
     width: 34px; height: 34px; border-radius: 11px;
-    background: linear-gradient(135deg, #7400b8, #5390d9 60%, #64dfdf);
+    background: linear-gradient(135deg, #7400b8, #5390d9 60%, #56cfe1);
     color: white; display: grid; place-items: center;
     font-family: var(--font-mono); font-size: 15px; font-weight: 700;
     box-shadow: 0 4px 14px rgba(116, 0, 184, 0.35);
@@ -97,13 +88,50 @@
     border-radius: 999px; transition: color 0.15s, background 0.15s;
   }
   .nav-link:hover { color: var(--fg); background: var(--p1-soft); }
-  .theme-btn {
-    appearance: none; border: 1px solid var(--border);
-    background: var(--bg-elev); color: var(--fg);
-    font-family: var(--font-mono); font-size: 11px;
-    padding: 7px 12px; border-radius: 999px;
+  /* ── Theme switch (sun/moon animated toggle) ──────── */
+  .theme-switch {
+    font-size: 17px;
+    position: relative;
+    display: inline-block;
+    width: 64px; height: 34px;
+    flex-shrink: 0;
   }
-  .theme-btn:hover { border-color: var(--p1); color: var(--p1); }
+  .theme-switch input { opacity: 0; width: 0; height: 0; }
+  .theme-switch .slider {
+    position: absolute; cursor: pointer; inset: 0;
+    background-color: #73C0FC;
+    transition: background-color 0.4s, box-shadow 0.4s;
+    border-radius: 30px;
+  }
+  .theme-switch .slider::before {
+    position: absolute; content: "";
+    height: 30px; width: 30px;
+    border-radius: 20px;
+    left: 2px; bottom: 2px; z-index: 2;
+    background-color: #e8e8e8;
+    transition: transform 0.4s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.18);
+  }
+  .theme-switch .sun svg {
+    position: absolute; top: 6px; left: 36px; z-index: 1;
+    width: 24px; height: 24px;
+    animation: theme-sun-rotate 15s linear infinite;
+  }
+  .theme-switch .moon svg {
+    fill: #73C0FC;
+    position: absolute; top: 5px; left: 5px; z-index: 1;
+    width: 24px; height: 24px;
+    animation: theme-moon-tilt 5s linear infinite;
+  }
+  .theme-switch input:checked + .slider { background-color: #183153; }
+  .theme-switch input:focus-visible + .slider { box-shadow: 0 0 0 3px rgba(116, 0, 184, 0.25); }
+  .theme-switch input:checked + .slider::before { transform: translateX(30px); }
+  @keyframes theme-sun-rotate { to { transform: rotate(360deg); } }
+  @keyframes theme-moon-tilt {
+    0%, 100% { transform: rotate(0deg); }
+    25%      { transform: rotate(-10deg); }
+    75%      { transform: rotate(10deg); }
+  }
 
   /* ── Hero ────────────────────────────────────────────── */
   .hero {
@@ -127,7 +155,7 @@
   @keyframes floatPill { from { opacity: 0; transform: translateY(8px); } }
   .pill .dot {
     width: 8px; height: 8px; border-radius: 50%;
-    background: linear-gradient(135deg, #7400b8, #64dfdf);
+    background: linear-gradient(135deg, #7400b8, #56cfe1);
     box-shadow: 0 0 0 3px var(--p1-soft);
     animation: pulseDot 2s ease-in-out infinite;
   }
@@ -154,7 +182,7 @@
     font-family: var(--font-serif);
     font-style: italic;
     font-weight: 400;
-    background: linear-gradient(135deg, #7400b8 0%, #5390d9 50%, #64dfdf 100%);
+    background: linear-gradient(135deg, #7400b8 0%, #5390d9 50%, #56cfe1 100%);
     background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -259,6 +287,15 @@
     background: repeating-linear-gradient(-45deg, transparent 0 5px, rgba(255,255,255,0.10) 5px 6px);
   }
   .fb-avatar > span { position: relative; z-index: 1; }
+  .fb-avatar img,
+  .pc-avatar img {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    border-radius: inherit;
+    z-index: 3;
+    display: block;
+  }
 
   /* Hide floating bubbles on smaller screens to keep hero clean */
   @media (max-width: 1100px) {
@@ -646,39 +683,22 @@
 <nav class="nav">
   <a href="#top" class="brand">
     <div class="brand-mark">P</div>
-    <div>
-      <div class="brand-name">Persona</div>
-      <div class="brand-sub">// chat with mentors</div>
-    </div>
+    <div class="brand-name">Persona</div>
   </a>
   <div class="nav-right">
     <a href="#mentors" class="nav-link">mentors</a>
     <a href="#how" class="nav-link">how it works</a>
-    <button class="theme-btn" id="theme-btn">◑ light</button>
+    <label class="theme-switch" aria-label="Toggle theme">
+      <span class="sun"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><g fill="#ffd43b"><circle r="5" cy="12" cx="12"/><path d="m21 13h-1a1 1 0 0 1 0-2h1a1 1 0 0 1 0 2zm-17 0h-1a1 1 0 0 1 0-2h1a1 1 0 0 1 0 2zm13.66-5.66a1 1 0 0 1 -.66-.29 1 1 0 0 1 0-1.41l.71-.71a1 1 0 1 1 1.41 1.41l-.71.71a1 1 0 0 1 -.75.29zm-12.02 12.02a1 1 0 0 1 -.71-.29 1 1 0 0 1 0-1.41l.71-.66a1 1 0 0 1 1.41 1.41l-.71.71a1 1 0 0 1 -.7.24zm6.36-14.36a1 1 0 0 1 -1-1v-1a1 1 0 0 1 2 0v1a1 1 0 0 1 -1 1zm0 17a1 1 0 0 1 -1-1v-1a1 1 0 0 1 2 0v1a1 1 0 0 1 -1 1zm-5.66-14.66a1 1 0 0 1 -.7-.29l-.71-.71a1 1 0 0 1 1.41-1.41l.71.71a1 1 0 0 1 0 1.41 1 1 0 0 1 -.71.29zm12.02 12.02a1 1 0 0 1 -.7-.29l-.66-.71a1 1 0 0 1 1.36-1.36l.71.71a1 1 0 0 1 0 1.41 1 1 0 0 1 -.71.24z"/></g></svg></span>
+      <span class="moon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><path d="m223.5 32c-123.5 0-223.5 100.3-223.5 224s100 224 223.5 224c60.6 0 115.5-24.2 155.8-63.4 5-4.9 6.3-12.5 3.1-18.7s-10.1-9.7-17-8.5c-9.8 1.7-19.8 2.6-30.1 2.6-96.9 0-175.5-78.8-175.5-176 0-65.8 36-123.1 89.3-153.3 6.1-3.5 9.2-10.5 7.7-17.3s-7.3-11.9-14.3-12.5c-6.3-.5-12.6-.8-19-.8z"/></svg></span>
+      <input type="checkbox" id="theme-toggle" />
+      <span class="slider"></span>
+    </label>
   </div>
 </nav>
 
 <!-- HERO -->
 <section class="hero" id="top">
-  <div class="float-stage" aria-hidden="true">
-    <div class="float-bubble" data-pos="tl">
-      <div class="fb-avatar" data-accent="persona-1"><span>A</span></div>
-      <span>"Outcomes over optics."</span>
-    </div>
-    <div class="float-bubble" data-pos="tr">
-      <div class="fb-avatar" data-accent="persona-3"><span>K</span></div>
-      <span>"Feel the intuition."</span>
-    </div>
-    <div class="float-bubble" data-pos="bl">
-      <div class="fb-avatar" data-accent="persona-2"><span>Ab</span></div>
-      <span>"Ship before you're ready."</span>
-    </div>
-    <div class="float-bubble" data-pos="br">
-      <div class="fb-avatar" data-accent="persona-1"><span>A</span></div>
-      <span>"Depth beats breadth."</span>
-    </div>
-  </div>
-
   <div style="position: relative; z-index: 2;">
     <div class="pill"><span class="dot"></span> three mentors · one chat window</div>
 
@@ -707,19 +727,19 @@
     <!-- Demo card preview -->
     <div class="demo-card">
       <div class="demo-tabs">
-        <div class="demo-tab active"><div class="fb-avatar" data-accent="persona-1"><span>A</span></div><span>Anshuman</span></div>
-        <div class="demo-tab"><div class="fb-avatar" data-accent="persona-2"><span>Ab</span></div><span>Abhimanyu</span></div>
-        <div class="demo-tab"><div class="fb-avatar" data-accent="persona-3"><span>K</span></div><span>Kshitij</span></div>
+        <div class="demo-tab active"><div class="fb-avatar" data-accent="persona-1"><img src="/avatars/a.png" alt="Anshuman Singh" /></div><span>Anshuman</span></div>
+        <div class="demo-tab"><div class="fb-avatar" data-accent="persona-2"><img src="/avatars/ab.png" alt="Abhimanyu Saxena" /></div><span>Abhimanyu</span></div>
+        <div class="demo-tab"><div class="fb-avatar" data-accent="persona-3"><img src="/avatars/k.png" alt="Kshitij Mishra" /></div><span>Kshitij</span></div>
       </div>
       <div class="demo-msg-row user">
         <div class="demo-bubble">Should I take the FAANG offer or go to a YC startup?</div>
       </div>
       <div class="demo-msg-row">
-        <div class="fb-avatar" data-accent="persona-1"><span>A</span></div>
+        <div class="fb-avatar" data-accent="persona-1"><img src="/avatars/a.png" alt="Anshuman Singh" /></div>
         <div class="demo-bubble">Stop optimising for the logo. Optimise for the slope of your learning curve. Where will you be a meaningfully better engineer 18 months from now? <span id="typing-target"></span></div>
       </div>
       <div class="demo-msg-row">
-        <div class="fb-avatar" data-accent="persona-1"><span>A</span></div>
+        <div class="fb-avatar" data-accent="persona-1"><img src="/avatars/a.png" alt="Anshuman Singh" /></div>
         <div class="demo-typing"><span></span><span></span><span></span></div>
       </div>
     </div>
@@ -740,7 +760,7 @@
     <div class="persona-grid">
       <a href="chat.html#anshuman" class="persona-card reveal" data-accent="persona-1">
         <div class="pc-top">
-          <div class="pc-avatar" data-accent="persona-1"><span>A</span></div>
+          <div class="pc-avatar" data-accent="persona-1"><img src="/avatars/a.png" alt="Anshuman Singh" /></div>
           <div class="pc-num">01 / 03</div>
         </div>
         <div>
@@ -758,7 +778,7 @@
 
       <a href="chat.html#abhimanyu" class="persona-card reveal" data-accent="persona-2" style="transition-delay: 0.1s;">
         <div class="pc-top">
-          <div class="pc-avatar" data-accent="persona-2"><span>Ab</span></div>
+          <div class="pc-avatar" data-accent="persona-2"><img src="/avatars/ab.png" alt="Abhimanyu Saxena" /></div>
           <div class="pc-num">02 / 03</div>
         </div>
         <div>
@@ -776,7 +796,7 @@
 
       <a href="chat.html#kshitij" class="persona-card reveal" data-accent="persona-3" style="transition-delay: 0.2s;">
         <div class="pc-top">
-          <div class="pc-avatar" data-accent="persona-3"><span>K</span></div>
+          <div class="pc-avatar" data-accent="persona-3"><img src="/avatars/k.png" alt="Kshitij Mishra" /></div>
           <div class="pc-num">03 / 03</div>
         </div>
         <div>
@@ -845,19 +865,18 @@
 </footer>
 
 <script>
-  // Theme toggle (persisted)
+  // Theme toggle (persisted). Checkbox checked = dark mode.
   const root = document.documentElement;
-  const btn = document.getElementById('theme-btn');
+  const toggle = document.getElementById('theme-toggle');
   const setTheme = (t) => {
     root.dataset.theme = t;
-    btn.textContent = t === 'dark' ? '◐ dark' : '◑ light';
+    toggle.checked = (t === 'dark');
     try { localStorage.setItem('persona-theme', t); } catch (e) {}
   };
-  try {
-    const saved = localStorage.getItem('persona-theme');
-    if (saved) setTheme(saved);
-  } catch (e) {}
-  btn.addEventListener('click', () => setTheme(root.dataset.theme === 'dark' ? 'light' : 'dark'));
+  let saved = 'light';
+  try { saved = localStorage.getItem('persona-theme') || 'light'; } catch (e) {}
+  setTheme(saved);
+  toggle.addEventListener('change', () => setTheme(toggle.checked ? 'dark' : 'light'));
 
   // Reveal-on-scroll
   const obs = new IntersectionObserver((entries) => {

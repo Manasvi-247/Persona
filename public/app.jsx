@@ -5,37 +5,118 @@ const { useState, useEffect, useRef, useMemo, useCallback } = React;
 // Calls the real backend at /api/chat. The endpoint loads the right system
 // prompt server-side and returns a string reply.
 async function fetchReply(personaId, history) {
-  const messages = history.map((m) => ({
-    role: m.from === 'user' ? 'user' : 'assistant',
-    content: m.text,
-  }));
+  const messages = history
+    .filter((m) => !m.isError) // never replay error bubbles to the model
+    .map((m) => ({ role: m.from === 'user' ? 'user' : 'assistant', content: m.text }));
 
-  const res = await fetch('/api/chat', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ persona: personaId, messages }),
-  });
+  let res;
+  try {
+    res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ persona: personaId, messages }),
+    });
+  } catch (e) {
+    const err = new Error('network');
+    err.kind = 'network';
+    throw err;
+  }
 
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new Error(data.error || `Request failed (${res.status}).`);
+    const err = new Error(data.error || `Request failed (${res.status}).`);
+    err.status = res.status;
+    err.kind = errorKindFromStatus(res.status, data.error || '');
+    throw err;
   }
   return data.reply || '';
 }
+
+function errorKindFromStatus(status, message) {
+  const m = (message || '').toLowerCase();
+  if (status === 429 || m.includes('quota') || m.includes('rate')) return 'rate-limit';
+  if (status === 503 || m.includes('overload') || m.includes('high demand') || m.includes('unavailable')) return 'overloaded';
+  if (status === 401 || status === 403 || m.includes('api key') || m.includes('missing')) return 'config';
+  if (status >= 500) return 'server';
+  if (status >= 400) return 'request';
+  return 'unknown';
+}
+
+const FRIENDLY_ERRORS = {
+  network: {
+    title: "Can't reach the server",
+    body: "Looks like you're offline or the connection dropped. Check your internet and try again.",
+  },
+  'rate-limit': {
+    title: "Slow down a moment",
+    body: "We've hit the API rate limit. Give it about a minute and try again.",
+  },
+  overloaded: {
+    title: "The model is busy",
+    body: "Gemini is at high load right now. Usually clears in 10–30 seconds — give it another go.",
+  },
+  config: {
+    title: "Server isn't configured",
+    body: "The API key seems missing or invalid on the server. If you're the developer, check the GEMINI_API_KEY env var.",
+  },
+  server: {
+    title: "Something broke on our side",
+    body: "An unexpected server error happened. Try again in a moment — and if it keeps happening, refresh the page.",
+  },
+  request: {
+    title: "That request didn't go through",
+    body: "Your message couldn't be processed. Try rephrasing or sending again.",
+  },
+  unknown: {
+    title: "Something went wrong",
+    body: "An unexpected error happened. Try again, or refresh if it persists.",
+  },
+};
 
 const formatTime = (d) => d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
 function Tab({ persona, active, onClick }) {
   return (
     <button className="tab" data-active={active} data-accent={persona.accent} onClick={onClick}>
-      <div className="tab-avatar" data-accent={persona.accent}><span>{persona.initial}</span></div>
+      <div className="tab-avatar" data-accent={persona.accent}>{persona.avatar ? <img src={persona.avatar} alt={persona.fullName} /> : <span>{persona.initial}</span>}</div>
       <span>{persona.name}</span>
     </button>
   );
 }
 
-function Message({ msg, persona }) {
+function ErrorBubble({ msg, persona, onRetry }) {
+  const info = FRIENDLY_ERRORS[msg.errorKind] || FRIENDLY_ERRORS.unknown;
+  return (
+    <div className="msg-row" data-from="bot">
+      <div className="msg-avatar" data-accent={persona.accent} data-error="true"><span>!</span></div>
+      <div className="msg-stack">
+        <div className="bubble-meta">
+          <span className="bubble-meta-name">System</span>
+          <span>{formatTime(msg.time)}</span>
+        </div>
+        <div className="bubble bubble-error">
+          <div className="error-title">{info.title}</div>
+          <div className="error-body">{info.body}</div>
+          {onRetry && (
+            <button className="error-retry" onClick={onRetry} type="button">
+              ↻ Try again
+            </button>
+          )}
+          {msg.detail && (
+            <details className="error-detail">
+              <summary>Technical details</summary>
+              <code>{msg.detail}</code>
+            </details>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Message({ msg, persona, onRetry }) {
   const [copied, setCopied] = useState(false);
+  if (msg.isError) return <ErrorBubble msg={msg} persona={persona} onRetry={onRetry} />;
   const copy = () => {
     navigator.clipboard?.writeText(msg.text);
     setCopied(true);
@@ -45,7 +126,7 @@ function Message({ msg, persona }) {
   return (
     <div className="msg-row" data-from={msg.from}>
       {!isUser && (
-        <div className="msg-avatar" data-accent={persona.accent}><span>{persona.initial}</span></div>
+        <div className="msg-avatar" data-accent={persona.accent}>{persona.avatar ? <img src={persona.avatar} alt={persona.fullName} /> : <span>{persona.initial}</span>}</div>
       )}
       <div className="msg-stack">
         <div className="bubble-meta">
@@ -66,7 +147,7 @@ function Message({ msg, persona }) {
 function TypingIndicator({ persona }) {
   return (
     <div className="msg-row" data-from="bot">
-      <div className="msg-avatar" data-accent={persona.accent}><span>{persona.initial}</span></div>
+      <div className="msg-avatar" data-accent={persona.accent}>{persona.avatar ? <img src={persona.avatar} alt={persona.fullName} /> : <span>{persona.initial}</span>}</div>
       <div className="msg-stack">
         <div className="bubble-meta">
           <span className="bubble-meta-name">{persona.fullName}</span>
@@ -83,7 +164,7 @@ function TypingIndicator({ persona }) {
 function EmptyState({ persona }) {
   return (
     <div className="empty">
-      <div className="empty-mark" data-accent={persona.accent}><span>{persona.initial}</span></div>
+      <div className="empty-mark" data-accent={persona.accent}>{persona.avatar ? <img src={persona.avatar} alt={persona.fullName} /> : <span>{persona.initial}</span>}</div>
       <h2 className="empty-name">{persona.fullName}</h2>
       <div className="empty-role">{persona.role}</div>
       <p className="empty-hook">"{persona.emptyHook}"</p>
@@ -95,7 +176,7 @@ function BioPanel({ persona, onReset }) {
   return (
     <aside className="bio">
       <div className="bio-head">
-        <div className="bio-avatar" data-accent={persona.accent}><span>{persona.initial}</span></div>
+        <div className="bio-avatar" data-accent={persona.accent}>{persona.avatar ? <img src={persona.avatar} alt={persona.fullName} /> : <span>{persona.initial}</span>}</div>
         <div className="bio-name-block">
           <h3 className="bio-name">{persona.fullName}</h3>
           <div className="bio-role">{persona.role}</div>
@@ -175,17 +256,83 @@ const FONT_PAIRS = {
   playful: { sans: "'DM Sans', ui-sans-serif",                  mono: "'DM Mono', ui-monospace, monospace" },
 };
 
+function ThemeSwitch({ dark, onChange }) {
+  return (
+    <label className="theme-switch" aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}>
+      <span className="sun">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+          <g fill="#ffd43b">
+            <circle r="5" cy="12" cx="12" />
+            <path d="m21 13h-1a1 1 0 0 1 0-2h1a1 1 0 0 1 0 2zm-17 0h-1a1 1 0 0 1 0-2h1a1 1 0 0 1 0 2zm13.66-5.66a1 1 0 0 1 -.66-.29 1 1 0 0 1 0-1.41l.71-.71a1 1 0 1 1 1.41 1.41l-.71.71a1 1 0 0 1 -.75.29zm-12.02 12.02a1 1 0 0 1 -.71-.29 1 1 0 0 1 0-1.41l.71-.66a1 1 0 0 1 1.41 1.41l-.71.71a1 1 0 0 1 -.7.24zm6.36-14.36a1 1 0 0 1 -1-1v-1a1 1 0 0 1 2 0v1a1 1 0 0 1 -1 1zm0 17a1 1 0 0 1 -1-1v-1a1 1 0 0 1 2 0v1a1 1 0 0 1 -1 1zm-5.66-14.66a1 1 0 0 1 -.7-.29l-.71-.71a1 1 0 0 1 1.41-1.41l.71.71a1 1 0 0 1 0 1.41 1 1 0 0 1 -.71.29zm12.02 12.02a1 1 0 0 1 -.7-.29l-.66-.71a1 1 0 0 1 1.36-1.36l.71.71a1 1 0 0 1 0 1.41 1 1 0 0 1 -.71.24z" />
+          </g>
+        </svg>
+      </span>
+      <span className="moon">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512">
+          <path d="m223.5 32c-123.5 0-223.5 100.3-223.5 224s100 224 223.5 224c60.6 0 115.5-24.2 155.8-63.4 5-4.9 6.3-12.5 3.1-18.7s-10.1-9.7-17-8.5c-9.8 1.7-19.8 2.6-30.1 2.6-96.9 0-175.5-78.8-175.5-176 0-65.8 36-123.1 89.3-153.3 6.1-3.5 9.2-10.5 7.7-17.3s-7.3-11.9-14.3-12.5c-6.3-.5-12.6-.8-19-.8z" />
+        </svg>
+      </span>
+      <input type="checkbox" checked={dark} onChange={(e) => onChange(e.target.checked)} />
+      <span className="slider" />
+    </label>
+  );
+}
+
 function getInitialPersona() {
   const hash = (typeof window !== 'undefined' ? window.location.hash : '').replace('#', '').toLowerCase();
   const match = PERSONAS.find((p) => p.id === hash);
   return match ? match.id : PERSONAS[0].id;
 }
 
+// Read the cross-page theme set by either landing or chat. Defaults to light.
+function getInitialDark() {
+  try {
+    return localStorage.getItem('persona-theme') === 'dark';
+  } catch { return false; }
+}
+
+// Conversation persistence — survives page reloads. Stored under one key
+// keyed by persona id. Date fields are revived to real Date objects.
+const CONVOS_STORAGE_KEY = 'persona-convos';
+
+function loadConvos() {
+  try {
+    const raw = localStorage.getItem(CONVOS_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') return {};
+    const out = {};
+    for (const [pid, msgs] of Object.entries(parsed)) {
+      if (!Array.isArray(msgs)) continue;
+      out[pid] = msgs
+        .filter((m) => !m.isError) // never restore stale error bubbles
+        .map((m) => ({ ...m, time: m.time ? new Date(m.time) : new Date() }));
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+function saveConvos(convos) {
+  try {
+    localStorage.setItem(CONVOS_STORAGE_KEY, JSON.stringify(convos));
+  } catch {
+    // Quota exceeded or storage disabled — silently drop, conversation still
+    // works in memory for the rest of the session.
+  }
+}
+
 function App() {
-  const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+  const initialTweaks = { ...TWEAK_DEFAULTS, dark: getInitialDark() };
+  const [t, setTweak] = useTweaks(initialTweaks);
   const [activeId, setActiveId] = useState(getInitialPersona);
-  const [convos, setConvos] = useState({});
+  const [convos, setConvos] = useState(loadConvos);
   const [typing, setTyping] = useState(false);
+
+  // Persist conversations to localStorage whenever they change. Errors are
+  // already filtered before each save by callApi, so storage stays clean.
+  useEffect(() => { saveConvos(convos); }, [convos]);
   const messagesRef = useRef(null);
 
   const persona = useMemo(() => PERSONAS.find((p) => p.id === activeId), [activeId]);
@@ -193,6 +340,7 @@ function App() {
 
   useEffect(() => {
     document.documentElement.dataset.theme = t.dark ? 'dark' : 'light';
+    try { localStorage.setItem('persona-theme', t.dark ? 'dark' : 'light'); } catch {}
     const fp = FONT_PAIRS[t.fontPair] || FONT_PAIRS.geist;
     document.documentElement.style.setProperty('--font-sans', fp.sans);
     document.documentElement.style.setProperty('--font-mono', fp.mono);
@@ -213,28 +361,45 @@ function App() {
     setTyping(false);
   };
 
-  const send = useCallback(async (text) => {
-    const userMsg = { from: 'user', text, time: new Date() };
-    const prior = convos[activeId] || [];
-    const nextHistory = [...prior, userMsg];
-    setConvos((c) => ({ ...c, [activeId]: nextHistory }));
+  // Internal: takes the history that should be sent (already includes the new user message).
+  const callApi = useCallback(async (personaId, historyToSend) => {
     setTyping(true);
     try {
-      const reply = await fetchReply(activeId, nextHistory);
-      const botMsg = { from: 'bot', text: reply || "(empty response)", time: new Date() };
-      setConvos((c) => ({ ...c, [activeId]: [...(c[activeId] || []), botMsg] }));
+      const reply = await fetchReply(personaId, historyToSend);
+      const botMsg = {
+        from: 'bot',
+        text: (reply && reply.trim()) || "(The model returned an empty reply. Try rephrasing your question.)",
+        time: new Date(),
+      };
+      setConvos((c) => ({ ...c, [personaId]: [...(c[personaId] || []).filter((m) => !m.isError), botMsg] }));
     } catch (err) {
       const errMsg = {
         from: 'bot',
-        text: `⚠️ ${err.message || 'Something went wrong reaching the chat API.'} Try again in a moment.`,
-        time: new Date(),
         isError: true,
+        errorKind: err.kind || 'unknown',
+        detail: err.message,
+        time: new Date(),
       };
-      setConvos((c) => ({ ...c, [activeId]: [...(c[activeId] || []), errMsg] }));
+      setConvos((c) => ({ ...c, [personaId]: [...(c[personaId] || []).filter((m) => !m.isError), errMsg] }));
     } finally {
       setTyping(false);
     }
-  }, [activeId, convos]);
+  }, []);
+
+  const send = useCallback((text) => {
+    const userMsg = { from: 'user', text, time: new Date() };
+    const prior = (convos[activeId] || []).filter((m) => !m.isError);
+    const nextHistory = [...prior, userMsg];
+    setConvos((c) => ({ ...c, [activeId]: nextHistory }));
+    callApi(activeId, nextHistory);
+  }, [activeId, convos, callApi]);
+
+  const retry = useCallback(() => {
+    const history = (convos[activeId] || []).filter((m) => !m.isError);
+    if (history.length === 0) return;
+    setConvos((c) => ({ ...c, [activeId]: history }));
+    callApi(activeId, history);
+  }, [activeId, convos, callApi]);
 
   return (
     <div className="app" data-screen-label="Persona chat">
@@ -242,10 +407,7 @@ function App() {
         <header className="topbar">
           <div className="brand">
             <div className="brand-mark">P</div>
-            <div>
-              <div className="brand-name">Persona</div>
-              <div className="brand-sub">// chat with mentors</div>
-            </div>
+            <div className="brand-name">Persona</div>
           </div>
 
           <div className="tabs">
@@ -254,14 +416,14 @@ function App() {
             ))}
           </div>
 
-          <button className="theme-toggle" onClick={() => setTweak('dark', !t.dark)}>
-            {t.dark ? '◐ dark' : '◑ light'}
-          </button>
+          <ThemeSwitch dark={t.dark} onChange={(v) => setTweak('dark', v)} />
         </header>
 
         <div className="messages" ref={messagesRef}>
           {messages.length === 0 && !typing && <EmptyState persona={persona} />}
-          {messages.map((m, i) => <Message key={i} msg={m} persona={persona} />)}
+          {messages.map((m, i) => (
+            <Message key={i} msg={m} persona={persona} onRetry={m.isError && !typing ? retry : null} />
+          ))}
           {typing && <TypingIndicator persona={persona} />}
         </div>
 

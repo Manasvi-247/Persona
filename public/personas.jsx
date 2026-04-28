@@ -13,6 +13,7 @@ const PERSONAS = [
     catchphrase: "Content is hygiene. Ecosystem is the secret sauce.",
     accent: 'persona-1',
     initial: 'A',
+    avatar: '/avatars/a.png',
     bio: [
       'Co-founded Scaler in 2019 and InterviewBit in 2015 with Abhimanyu Saxena.',
       'IIIT Hyderabad alum. Two-time ACM ICPC World Finalist (2009, 2010).',
@@ -37,6 +38,7 @@ const PERSONAS = [
     catchphrase: "AI won't replace you — someone using AI will.",
     accent: 'persona-2',
     initial: 'Ab',
+    avatar: '/avatars/ab.png',
     bio: [
       'Grew up in Amarkantak (MP). Never touched a computer before college.',
       'IIIT Hyderabad. Sold his college startup (Daksh Home Automation) before founding Scaler.',
@@ -50,7 +52,7 @@ const PERSONAS = [
       'How do you hire your first 10 engineers?',
     ],
     placeholder: 'Ask Abhimanyu about building, hiring, AI, or India…',
-    emptyHook: "Have a compass for the long term, a map for the short term. So — what's the bet you're sitting on?",
+    emptyHook: "Map tells you how to go there and It is also very, very important that you keep building your map as you travel across.",
   },
   {
     id: 'kshitij',
@@ -58,13 +60,14 @@ const PERSONAS = [
     fullName: 'Kshitij Mishra',
     role: 'Dean, Scaler School of Technology',
     blurb: "The instructor who turns scary topics into obvious ones.",
-    catchphrase: "Trust the long game. Quiet victories compound.",
+    catchphrase: "Trust the long game. Focus on growth, not just instant results.",
     accent: 'persona-3',
     initial: 'K',
+    avatar: '/avatars/k.png',
     bio: [
       'Head of Instructors at Scaler. Dean of Scaler School of Technology (SST).',
       'IIIT Hyderabad. 4 research papers, 148+ citations in NLP and computer vision.',
-      "Famously says: “Programming felt like a nightmare for me too in college.”",
+      "Has named his dog after a bitwise operator. Tells you everything.",
     ],
     values: ['Delayed gratification', 'First-principles teaching', 'Smart persistence'],
     chips: [
