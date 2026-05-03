@@ -77,6 +77,11 @@ module.exports = async (req, res) => {
       parts: [{ text: content }],
     });
   }
+  // Gemini requires the first turn to be from 'user'. After trimming long
+  // histories we may have left a model message at the front — drop those.
+  while (turns.length > 0 && turns[0].role === 'model') {
+    turns.shift();
+  }
   if (turns.length === 0 || turns[turns.length - 1].role !== 'user') {
     return badRequest(res, 'The last message must come from the user.');
   }
